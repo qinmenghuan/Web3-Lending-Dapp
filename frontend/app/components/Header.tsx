@@ -4,29 +4,44 @@ import styles from "../styles/Home.module.css";
 import React from "react";
 import { Button } from "@/components/ui/button";
 
+import Link from "next/link";
 import {
   NavigationMenu,
-  NavigationMenuContent,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 
 const Header = () => {
   return (
-    <div className={styles.header}>
-      <NavigationMenu>
-        <NavigationMenuList>
-          <NavigationMenuItem>
-            <NavigationMenuTrigger>Item One</NavigationMenuTrigger>
-            <NavigationMenuContent>
-              <NavigationMenuLink>Link</NavigationMenuLink>
-            </NavigationMenuContent>
-          </NavigationMenuItem>
-        </NavigationMenuList>
-      </NavigationMenu>
-      <ConnectButton />
+    <div className="flex items-center mx-8 my-4">
+      <h1 className="text-2xl font-bold flex-none mr-8">Huan Morpho</h1>
+      <span className="grow">
+        <NavigationMenu>
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                asChild
+                className={`${navigationMenuTriggerStyle()} text-lg`}
+              >
+                <Link href="/vaults">Vaults</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                asChild
+                className={`${navigationMenuTriggerStyle()} text-lg`}
+              >
+                <Link href="/markets">Markets</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
+      </span>
+      <span className="flex-none">
+        <ConnectButton />
+      </span>
     </div>
   );
 };

@@ -87,7 +87,7 @@ contract LendingMarket {
         require(getAvailableLiquidity() > 0, "bad liquidity");
 
         deposits[msg.sender] -= amount;
-        stats[msg.sender].totalDeposits -= amount;
+        stats.totalDeposits -= amount;
         require(
             IERC20(loanToken).transfer(msg.sender, amount),
             "transfer failure"
@@ -150,7 +150,6 @@ contract LendingMarket {
     // 提取质押物
     function withdrawCollateral(uint256 amount) external nonReentrant {
         require(amount > 0, "amount =0");
-        require(debtOf[msg.sender] = 0, "debt should be clear");
         uint256 maxBorrowAfterWithdraw = ((collateralOf[msg.sender] - amount) *
             ltvBps) / 10000;
         require(

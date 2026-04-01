@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy:sepolia": "hardhat run --network sepolia scripts/deploy-sepolia.ts --build-profile production",
+    "deploy:sepolia:clean": "node scripts/run-deploy-sepolia.mjs",
+    "deploy:sepolia:clean:verify": "node scripts/run-deploy-sepolia.mjs --verify",
+    "deploy:sepolia:ethers": "node scripts/deploy-sepolia-ethers.mjs"
   },
   "keywords": [],
   "author": "",

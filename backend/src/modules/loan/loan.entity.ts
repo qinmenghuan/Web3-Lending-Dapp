@@ -20,6 +20,6 @@ export class Loan {
   @Column()
   txHash: string;
 
-  @Column()
+  @Column('bigint')
   timestamp: number;
 }

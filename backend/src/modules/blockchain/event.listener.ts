@@ -16,12 +16,15 @@ export class EventListener implements OnModuleInit {
   onModuleInit() {
     const contract = getLoanContract(this.blockchain.getProvider());
     contract.on('Deposited', async (user, amount, event) => {
+      console.log(
+        `Detected deposit: user=${user}, amount=${amount.toString()}`,
+      );
       await this.loanRepo.save({
         user,
         // token:"collateral",
         type: 'deposit',
         amount: amount.toString(),
-        txHash: event.log.transactionHash,
+        txHash: event?.log?.transactionHash,
         timestamp: Date.now(),
       });
     });

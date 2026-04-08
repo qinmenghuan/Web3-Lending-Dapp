@@ -5,6 +5,9 @@ export class Loan {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ type: 'varchar', nullable: true })
+  marketAddress: string | null;
+
   @Column()
   user: string;
 
@@ -12,7 +15,7 @@ export class Loan {
   // token: string;
 
   @Column()
-  type: string; // deposit / borrow
+  type: string; // deposit / withdraw /borrow
 
   @Column()
   amount: string;

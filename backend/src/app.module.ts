@@ -19,7 +19,7 @@ import { RedisModule } from './common/redis/redis.module';
 // 导入市场业务模块，负责市场相关接口和服务。
 import { MarketModule } from './modules/market/market.module';
 // 这里保留了 LoanModule 的导入语句，但当前仍然注释掉，表示暂未启用该模块。
-// import { LoanModule } from './modules/loan/loan.module';
+import { LoanModule } from './modules/loan/loan.module';
 // 导入区块链业务模块，负责链上事件监听、合约交互等能力。
 import { BlockchainModule } from './modules/blockchain/blockchain.module';
 // 导入 Loan 实体，供 TypeORM 注册实体映射时使用。
@@ -66,8 +66,8 @@ import { Market } from './modules/market/market.entity';
     RedisModule,
     // 注册市场业务模块。
     MarketModule,
-    // 当前未启用 LoanModule，因此保留注释状态。
-    // LoanModule,
+    // 注册借贷业务模块
+    LoanModule,
     // 注册区块链业务模块。
     BlockchainModule,
   ],

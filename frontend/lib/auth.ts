@@ -5,13 +5,17 @@ const API_BASE_URL =
 export async function requestWalletLogin(walletAddress: string) {
   const res = await fetch(`${API_BASE_URL}/auth/wallet/request`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       walletAddress: walletAddress,
     }),
   });
 
   if (!res.ok) {
-    throw new Error("Fail to request wallet login");
+    const errorText = await res.text();
+    throw new Error(errorText || "Fail to request wallet login");
   }
   return res.json();
 }
@@ -24,11 +28,15 @@ export async function verifyWalletLogin(params: {
 }) {
   const res = await fetch(`${API_BASE_URL}/auth/wallet/verify`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(params),
   });
 
   if (!res.ok) {
-    throw new Error("Fail to verify the wallet login");
+    const errorText = await res.text();
+    throw new Error(errorText || "Fail to verify the wallet login");
   }
 
   return res.json();

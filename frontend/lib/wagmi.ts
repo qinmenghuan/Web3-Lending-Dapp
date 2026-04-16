@@ -20,8 +20,8 @@ export const config = getDefaultConfig({
       "https://mainnet.infura.io/v3/4b0a01cb618e4f139038fdf4306d6eb9",
     ),
     [sepolia.id]: http(
-      // "https://sepolia.infura.io/v3/4b0a01cb618e4f139038fdf4306d6eb9",
-      "https://eth-sepolia.g.alchemy.com/v2/NxyO2bjE2e6Y7kwCbXCny",
+      "https://sepolia.infura.io/v3/4b0a01cb618e4f139038fdf4306d6eb9",
+      // "https://eth-sepolia.g.alchemy.com/v2/NxyO2bjE2e6Y7kwCbXCny",
     ),
     [polygon.id]: http(
       "https://polygon-mainnet.infura.io/v3/4b0a01cb618e4f139038fdf4306d6eb9",

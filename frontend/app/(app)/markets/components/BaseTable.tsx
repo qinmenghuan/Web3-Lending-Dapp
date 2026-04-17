@@ -1,4 +1,5 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
 
 import {
   Table,
@@ -9,32 +10,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getMarkets } from "@/lib/market";
 
 const BaseTable = () => {
-  const testData = [
-    {
-      id: 1,
-      network: "Base",
-      collateral: "ETH",
-      loan: "USDC",
-      lltv: "75%",
-      totalMarketSize: "$1,000,000",
-      rate6h: "0.05%",
-      utilization: "60%",
-      totalLiquidity: "$400,000",
-    },
-    {
-      id: 2,
-      network: "Base",
-      collateral: "ETH",
-      loan: "USDC",
-      lltv: "75%",
-      totalMarketSize: "$1,000,000",
-      rate6h: "0.05%",
-      utilization: "60%",
-      totalLiquidity: "$400,000",
-    },
-  ];
+  const [testData, setTestData] = useState([]);
+
+  React.useEffect(() => {
+    // 查询市场
+    const fetchMarkets = async () => {
+      const markets = await getMarkets();
+      console.log("markets", markets);
+      setTestData(markets);
+    };
+
+    fetchMarkets();
+  }, []);
 
   return (
     <Table className="mt-4">
@@ -46,22 +36,21 @@ const BaseTable = () => {
           <TableHead>Loan</TableHead>
           <TableHead>LLTV</TableHead>
           <TableHead>Total Market Size</TableHead>
-          <TableHead>6h Rate</TableHead>
-          <TableHead>Utilization</TableHead>
           <TableHead>Total Liquidity</TableHead>
+          <TableHead>Utilization</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {testData.map((item) => (
           <TableRow key={item.id}>
             <TableCell className="font-medium">{item.network}</TableCell>
-            <TableCell>{item.collateral}</TableCell>
-            <TableCell>{item.loan}</TableCell>
-            <TableCell>{item.lltv}</TableCell>
-            <TableCell>{item.totalMarketSize}</TableCell>
-            <TableCell>{item.rate6h}</TableCell>
-            <TableCell>{item.utilization}</TableCell>
-            <TableCell>{item.totalLiquidity}</TableCell>
+            <TableCell>{item.collateralTokenName}</TableCell>
+            <TableCell>{item.loanTokenName}</TableCell>
+            {/* 强制执行货款价值比 */}
+            <TableCell>{item.lltvDesc}</TableCell>
+            <TableCell>{item.totalLoanAmountDesc}</TableCell>
+            <TableCell>{item.totalLiquidityDesc}</TableCell>
+            <TableCell>{item.utilizationDesc}</TableCell>
           </TableRow>
         ))}
       </TableBody>

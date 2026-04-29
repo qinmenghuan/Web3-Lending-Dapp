@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Market } from './market.entity';
-import { ResponseMarketDto } from './dto/response-market.dto';
+import {
+  ResponseMarketDto,
+  ResponseMarketDetailDto,
+} from './dto/response-market.dto';
 import { resolveObjectURL } from 'buffer';
 import { formatEther } from 'ethers';
 
@@ -33,7 +36,18 @@ export class MarketService {
     });
   }
 
-  async findOne(id: number): Promise<Market | null> {
-    return await this.marketRepository.findOneBy({ id });
+  async findOne(id: number): Promise<ResponseMarketDetailDto | null> {
+    const market = await this.marketRepository.findOneBy({ id });
+    if (!market) {
+      return null;
+    }
+    return {
+      ...market,
+      lltvDesc: `${(market.ltvBps / 10000) * 100}%`,
+      totalLoanAmountDesc: formatEther(BigInt(market.totalLoanAmount)), // 转成字符串类型，避免前端精度问题
+      // totalLiquidityDesc: formatEther(
+      //   BigInt(market.totalLoanAmount) - BigInt(market.totalDebtAmount),
+      // ), // 可选字段，表示市场的总流动性
+    };
   }
 }

@@ -1,24 +1,42 @@
-import React from "react";
+"use client";
+
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { formatAddress } from "@/lib/utils";
+import { getMarketById } from "@/lib/market";
 
 const DetailBaseInfo = () => {
+  const [market, setMarket] = React.useState(null);
+
+  useEffect(() => {
+    const fetchMarket = async () => {
+      const market = await getMarketById(2);
+      console.log("market", market);
+      setMarket(market);
+    };
+
+    fetchMarket();
+  }, []);
+
+  if (!market) {
+    return <div>Loading...</div>;
+  }
   return (
     <div>
       <h2>
         <div className="flex items-center gap-4">
-          <span className="text-6xl">cbBTC/USDC</span>
+          <span className="text-5xl">
+            {market?.collateralTokenName}/{market?.loanTokenName}
+          </span>
           <span className="rounded-lg bg-gray-200 text-black p-1 py-1 text-xs">
-            86%
+            {market?.lltvDesc}
           </span>
         </div>
         <div className="mt-4 mb-10">
           <Button variant="soft">
-            {formatAddress(
-              "0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836",
-            )}
+            {formatAddress(market?.collateralTokenAddress)}
           </Button>
-          <Button variant="soft">Base</Button>
+          <Button variant="soft">{market.network}</Button>
         </div>
       </h2>
       <div className="flex justify-between">

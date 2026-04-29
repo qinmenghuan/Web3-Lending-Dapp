@@ -5,18 +5,18 @@ import { Button } from "@/components/ui/button";
 import { formatAddress } from "@/lib/utils";
 import { getMarketById } from "@/lib/market";
 
-const DetailBaseInfo = () => {
+const DetailBaseInfo = ({ marketId }: { marketId: string }) => {
   const [market, setMarket] = React.useState(null);
 
   useEffect(() => {
     const fetchMarket = async () => {
-      const market = await getMarketById(2);
+      const market = await getMarketById(Number(marketId));
       console.log("market", market);
       setMarket(market);
     };
 
     fetchMarket();
-  }, []);
+  }, [marketId]);
 
   if (!market) {
     return <div>Loading...</div>;

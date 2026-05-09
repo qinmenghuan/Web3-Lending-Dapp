@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -13,8 +12,19 @@ import {
 } from "@/components/ui/table";
 import { getMarkets } from "@/lib/market";
 
+interface MarketRow {
+  id: number;
+  network: string;
+  collateralTokenName: string;
+  loanTokenName: string;
+  lltvDesc: string;
+  totalLoanAmountDesc: string;
+  totalLiquidityDesc?: string;
+  utilizationDesc?: string;
+}
+
 const BaseTable = () => {
-  const [testData, setTestData] = useState([]);
+  const [testData, setTestData] = useState<MarketRow[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -28,7 +38,7 @@ const BaseTable = () => {
     fetchMarkets();
   }, []);
 
-  const onRowClick = (item) => {
+  const onRowClick = (item: MarketRow) => {
     console.log("Clicked market:", item);
     router.push(`/markets/${item.id}`);
   };

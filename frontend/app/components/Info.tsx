@@ -237,17 +237,18 @@ const Info = () => {
       )}
       <div>
         collateral token balanceOf:{" "}
-        {formatUnits(collateralTokenBalanceOf?.value || 0n, 18)}
+        {formatUnits(collateralTokenBalanceOf?.value || BigInt(0), 18)}
       </div>
       <div>
-        loan token balanceOf: {formatUnits(loanTokenBalanceOf?.value || 0n, 18)}
+        loan token balanceOf:{" "}
+        {formatUnits(loanTokenBalanceOf?.value || BigInt(0), 18)}
       </div>
       {/* <div>
         lending positions collateral :{" "}
-        {formatUnits(result?.data?.[0] ?? 0n, 18)}
+        {formatUnits(result?.data?.[0] ?? BigInt(0), 18)}
       </div>
       <div>
-        lending positions debt : {formatUnits(result?.data?.[1] ?? 0n, 18)}
+        lending positions debt : {formatUnits(result?.data?.[1] ?? BigInt(0), 18)}
       </div> */}
 
       <div>collateral: {collateral}</div>

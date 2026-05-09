@@ -5,8 +5,16 @@ import { Button } from "@/components/ui/button";
 import { formatAddress } from "@/lib/utils";
 import { getMarketById } from "@/lib/market";
 
-const DetailBaseInfo = ({ marketId }: { marketId: string }) => {
-  const [market, setMarket] = React.useState(null);
+interface MarketDetail {
+  collateralTokenName: string;
+  loanTokenName: string;
+  lltvDesc: string;
+  collateralTokenAddress: string;
+  network: string;
+}
+
+const DetailBaseInfo = ({ marketId, className }: { marketId: string; className?: string }) => {
+  const [market, setMarket] = React.useState<MarketDetail | null>(null);
 
   useEffect(() => {
     const fetchMarket = async () => {
@@ -19,10 +27,10 @@ const DetailBaseInfo = ({ marketId }: { marketId: string }) => {
   }, [marketId]);
 
   if (!market) {
-    return <div>Loading...</div>;
+    return <div className={className}>Loading...</div>;
   }
   return (
-    <div>
+    <div className={className}>
       <h2>
         <div className="flex items-center gap-4">
           <span className="text-5xl">
@@ -33,10 +41,10 @@ const DetailBaseInfo = ({ marketId }: { marketId: string }) => {
           </span>
         </div>
         <div className="mt-4 mb-10">
-          <Button variant="soft">
+          <Button variant="secondary">
             {formatAddress(market?.collateralTokenAddress)}
           </Button>
-          <Button variant="soft">{market.network}</Button>
+          <Button variant="secondary">{market.network}</Button>
         </div>
       </h2>
       <div className="flex justify-between">

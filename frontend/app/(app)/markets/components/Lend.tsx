@@ -1,12 +1,19 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { formatUnits } from "viem";
-import { useAccount, useBalance, useReadContract } from "wagmi";
+import { BaseError, formatUnits, parseUnits } from "viem";
+import {
+  useAccount,
+  useBalance,
+  usePublicClient,
+  useReadContract,
+  useWriteContract,
+} from "wagmi";
 
 import { Button } from "@/components/ui/button";
 import { getMarketById } from "@/lib/market";
 import { cn } from "@/lib/utils";
+import { erc20Abi, marketAbi } from "@/lib/const";
 
 interface MarketDetail {
   id: number;
@@ -52,6 +59,18 @@ const lendingMarketAbi = [
   },
 ] as const;
 
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof BaseError) {
+    return error.shortMessage;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Transaction failed. Check wallet and contract params.";
+};
+
 const toBigInt = (value?: string) => {
   try {
     return BigInt(value ?? "0");
@@ -94,7 +113,9 @@ const normalizeAmountInput = (value: string, decimals: number) => {
   const normalizedInteger = integerPart.replace(/^0+(?=\d)/, "") || "0";
 
   if (decimalParts.length === 0) {
-    return sanitized.endsWith(".") ? `${normalizedInteger}.` : normalizedInteger;
+    return sanitized.endsWith(".")
+      ? `${normalizedInteger}.`
+      : normalizedInteger;
   }
 
   return `${normalizedInteger}.${decimalParts.join("").slice(0, decimals)}`;
@@ -219,20 +240,30 @@ const Lend = ({
   const [market, setMarket] = useState<MarketDetail | null>(null);
   const [supplyAmount, setSupplyAmount] = useState("");
   const [borrowAmount, setBorrowAmount] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
 
   useEffect(() => {
     const fetchMarket = async () => {
       const response = await getMarketById(Number(marketId));
+      console.log("lend market", response);
       setMarket(response);
     };
 
     fetchMarket();
   }, [marketId]);
 
-  const collateralTokenAddress =
-    market?.collateralTokenAddress as `0x${string}` | undefined;
+  const collateralTokenAddress = market?.collateralTokenAddress as
+    | `0x${string}`
+    | undefined;
+  const loanTokenAddress = market?.loanTokenAddress as
+    | `0x${string}`
+    | undefined;
   const marketAddress = market?.marketAddress as `0x${string}` | undefined;
 
   const { data: collateralBalanceData } = useBalance({
@@ -240,6 +271,14 @@ const Lend = ({
     token: collateralTokenAddress,
     query: {
       enabled: Boolean(address && collateralTokenAddress),
+    },
+  });
+
+  const { data: loanBalanceData } = useBalance({
+    address,
+    token: loanTokenAddress,
+    query: {
+      enabled: Boolean(address && loanTokenAddress),
     },
   });
 
@@ -253,9 +292,24 @@ const Lend = ({
     },
   });
 
+  // allowance for collateral token to check if approval is needed before supply
+  const { data: collateralAllowance, refetch: refetchAllowance } =
+    useReadContract({
+      abi: erc20Abi,
+      address: collateralTokenAddress,
+      functionName: "allowance",
+      args: address && marketAddress ? [address, marketAddress] : undefined,
+      query: {
+        // only fetch allowance when user connected and market & collateral token exist
+        enabled: Boolean(address && collateralTokenAddress && marketAddress),
+      },
+    });
+
   const supplyValue = Number(supplyAmount || "0");
   const borrowValue = Number(borrowAmount || "0");
   const collateralBalance = Number(collateralBalanceData?.formatted ?? "0");
+  const collateralDecimals = collateralBalanceData?.decimals ?? 18;
+  const loanDecimals = loanBalanceData?.decimals ?? 18;
 
   const existingCollateral = toDisplayAmount(userPosition?.[1] ?? BigInt(0));
   const existingDebt = toDisplayAmount(userPosition?.[2] ?? BigInt(0));
@@ -333,7 +387,9 @@ const Lend = ({
 
   const hasAmount = Boolean(supplyAmount || borrowAmount);
   const hasErrors = Boolean(errors.supply || errors.borrow);
-  const canSubmit = Boolean(market && isConnected && hasAmount && !hasErrors);
+  const canSubmit = Boolean(
+    market && isConnected && hasAmount && !hasErrors && !isSubmitting,
+  );
 
   const projectedCollateral = existingCollateral + supplyValue;
   const projectedDebt = existingDebt + borrowValue;
@@ -349,11 +405,13 @@ const Lend = ({
       ? "Enter an amount"
       : hasErrors
         ? "Fix form errors"
-        : supplyValue > 0 && borrowValue > 0
-          ? `Supply ${collateralLabel} and Borrow ${loanLabel}`
-          : supplyValue > 0
-            ? `Supply ${collateralLabel}`
-            : `Borrow ${loanLabel}`;
+        : isSubmitting
+          ? "Submitting..."
+          : supplyValue > 0 && borrowValue > 0
+            ? `Supply ${collateralLabel} and Borrow ${loanLabel}`
+            : supplyValue > 0
+              ? `Supply ${collateralLabel}`
+              : `Borrow ${loanLabel}`;
 
   const handleAmountChange = (field: FieldName, value: string) => {
     const nextValue = normalizeAmountInput(value, INPUT_DECIMALS[field]);
@@ -375,18 +433,80 @@ const Lend = ({
     setBorrowAmount(toInputValue(maxBorrowAmount, INPUT_DECIMALS.borrow));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!canSubmit || !market) {
+    // check
+    if (!canSubmit || !market || !address || !marketAddress || !publicClient) {
       return;
     }
 
-    console.log("Lend form ready", {
-      marketId: market.id,
-      supplyAmount,
-      borrowAmount,
-    });
+    // clear state data before submit
+    setSubmitError("");
+    setSubmitSuccess("");
+    setIsSubmitting(true);
+
+    try {
+      // supply collateral if needed
+      if (supplyValue > 0) {
+        // check collateralTokenAddress
+        if (!collateralTokenAddress) {
+          throw new Error("Missing collateral token address.");
+        }
+
+        // parse amount to correct decimals
+        const collateralAmount = parseUnits(supplyAmount, collateralDecimals);
+        // check allowance and approve if needed
+        const allowance = collateralAllowance ?? BigInt(0);
+
+        // if allowance not enough, approve max uint256 to avoid multiple approval in future
+        if (allowance < collateralAmount) {
+          const approveHash = await writeContractAsync({
+            abi: erc20Abi,
+            address: collateralTokenAddress,
+            functionName: "approve",
+            args: [marketAddress, collateralAmount],
+          });
+
+          // wait for approval tx to be mined before supply, otherwise the supply tx will fail
+          await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          // refetch allowance to update UI, although we already know the new allowance will be max uint256, this can ensure the UI state is consistent with blockchain state
+          await refetchAllowance();
+        }
+
+        // then supply collateral to the market
+        const supplyHash = await writeContractAsync({
+          abi: marketAbi,
+          address: marketAddress,
+          functionName: "supplyCollateral",
+          args: [collateralAmount],
+        });
+
+        // wait for supply tx to be mined before show success, otherwise the user may see the success message but the transaction is still pending, which can cause confusion
+        await publicClient.waitForTransactionReceipt({ hash: supplyHash });
+      }
+
+      if (borrowValue > 0) {
+        const borrowAmountParsed = parseUnits(borrowAmount, loanDecimals);
+        const borrowHash = await writeContractAsync({
+          abi: marketAbi,
+          address: marketAddress,
+          functionName: "borrow",
+          args: [borrowAmountParsed],
+        });
+
+        await publicClient.waitForTransactionReceipt({ hash: borrowHash });
+      }
+
+      setSubmitSuccess("Transaction confirmed.");
+      setSupplyAmount("");
+      setBorrowAmount("");
+    } catch (error) {
+      console.error("lend submit failed", error);
+      setSubmitError(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!market) {
@@ -473,6 +593,13 @@ const Lend = ({
           <SummaryRow label="Rate" value="--" />
         </div>
       </div>
+
+      {submitError ? (
+        <p className="text-sm text-red-500">{submitError}</p>
+      ) : null}
+      {submitSuccess ? (
+        <p className="text-sm text-emerald-600">{submitSuccess}</p>
+      ) : null}
 
       <Button
         type="submit"

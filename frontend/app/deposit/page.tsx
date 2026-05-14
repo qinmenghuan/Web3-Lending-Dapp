@@ -3,9 +3,9 @@ import React from "react";
 import Header from "@/app/components/Header";
 import { useState } from "react";
 
-const page = () => {
+const Page = () => {
   const [amount, setAmount] = useState(0);
-  const inputValueHandler = (e) => {
+  const inputValueHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
     console.log(value);
     setAmount(value);
@@ -29,4 +29,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

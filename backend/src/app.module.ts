@@ -18,6 +18,8 @@ import { RedisModule } from './common/redis/redis.module';
 // 引入业务module
 // 导入市场业务模块，负责市场相关接口和服务。
 import { MarketModule } from './modules/market/market.module';
+// 导入金库业务模块，负责金库相关接口和服务。
+import { VaultModule } from './modules/vault/vault.module';
 // 这里保留了 LoanModule 的导入语句，但当前仍然注释掉，表示暂未启用该模块。
 import { LoanModule } from './modules/loan/loan.module';
 // 导入区块链业务模块，负责链上事件监听、合约交互等能力。
@@ -71,6 +73,8 @@ import { User } from './modules/auth/user.entity';
     RedisModule,
     // 注册市场业务模块。
     MarketModule,
+    // 注册金库业务模块。
+    VaultModule,
     // 注册借贷业务模块
     LoanModule,
     // 注册区块链业务模块。

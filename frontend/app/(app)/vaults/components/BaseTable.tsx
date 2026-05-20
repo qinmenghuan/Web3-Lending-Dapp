@@ -40,7 +40,7 @@ const BaseTable = () => {
 
   const onRowClick = (item: MarketRow) => {
     console.log("Clicked market:", item);
-    router.push(`/markets/${item.id}`);
+    router.push(`/vaults/${item.id}`);
   };
 
   return (

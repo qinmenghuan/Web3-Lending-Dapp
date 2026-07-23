@@ -12,6 +12,6 @@ async function bootstrap() {
       transform: true, // 自动将请求数据转换为 DTO 定义的类型，例如将字符串转换为数字
     }),
   );
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3001);
 }
 bootstrap();

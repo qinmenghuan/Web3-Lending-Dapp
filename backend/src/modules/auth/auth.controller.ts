@@ -8,12 +8,14 @@ import { VerifyWalletLoginDto } from './dto/verify-wallet-login.dto';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  // Request wallet login endpoint
   @Post('wallet/request')
   requestWalletLogin(@Body() dto: RequestWalletLoginDto) {
     console.log('Requesting wallet login for address:', dto.walletAddress);
     return this.authService.requestWalletLogin(dto.walletAddress);
   }
 
+  // Verify wallet login endpoint
   @Post('wallet/verify')
   verifyWalletLogin(@Body() dto: VerifyWalletLoginDto) {
     return this.authService.verifyWalletLogin(

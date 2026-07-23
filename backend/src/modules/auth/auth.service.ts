@@ -46,14 +46,18 @@ export class AuthService {
 
   // 请求登录，生成随机数和消息，并保存到数据库中，返回给前端供用户签名
   async requestWalletLogin(walletAddress: string) {
+    // 规范化钱包地址
     const normalizedAddress = this.normalizeAddress(walletAddress);
+    // 生成随机数
     const nonce = randomBytes(16).toString('hex');
     const now = Date.now();
+    // 5 minutes
     const expiredAt =
       now + Number(process.env.LOGIN_NONCE_EXPIRES_MS ?? '300000');
-
+    // create message
     const message = this.buildMessage(normalizedAddress, nonce, expiredAt);
 
+    // save to db
     const authNonce = this.authNonceRepo.create({
       walletAddress: normalizedAddress,
       nonce,

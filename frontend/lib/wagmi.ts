@@ -17,10 +17,10 @@ export const config = getDefaultConfig({
   chains: [mainnet, sepolia, polygon, optimism],
   transports: {
     [mainnet.id]: http(
-      "https://mainnet.infura.io/v3/4b0a01cb618e4f139038fdf4306d6eb9",
+      "https://mainnet.infura.io/v3/53cfe26918994470ba017dea73388b67",
     ),
     [sepolia.id]: http(
-      "https://sepolia.infura.io/v3/4b0a01cb618e4f139038fdf4306d6eb9",
+      "https://sepolia.infura.io/v3/53cfe26918994470ba017dea73388b67",
       // "https://eth-sepolia.g.alchemy.com/v2/NxyO2bjE2e6Y7kwCbXCny",
     ),
     [polygon.id]: http(

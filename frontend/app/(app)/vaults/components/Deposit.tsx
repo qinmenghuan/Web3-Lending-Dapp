@@ -156,7 +156,10 @@ const Deposit = ({
   //   },
   // });
 
-  const { data: loanBalanceData } = useBalance({
+  console.log("loanTokenAddress222", loanTokenAddress);
+  console.log("address111", address);
+
+  const { data: loanBalanceData, error: loanBalanceError } = useBalance({
     address,
     token: loanTokenAddress,
     query: {
@@ -195,6 +198,14 @@ const Deposit = ({
   // const borrowValue = Number(borrowAmount || "0");
   // const collateralBalance = Number(collateralBalanceData?.formatted ?? "0");
   // const collateralDecimals = collateralBalanceData?.decimals ?? 18;
+  console.log("loanBalanceData111", loanBalanceData);
+  console.log("loanBalanceError111", {
+    address,
+    loanTokenAddress,
+    error: loanBalanceError,
+    message: loanBalanceError?.message,
+    cause: loanBalanceError?.cause,
+  });
   const loanDecimals = loanBalanceData?.decimals ?? 18;
   const loanBalance = Number(loanBalanceData?.formatted ?? "0");
 

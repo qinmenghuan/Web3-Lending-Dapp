@@ -160,7 +160,11 @@ const Deposit = ({
   console.log("loanTokenAddress222", loanTokenAddress);
   console.log("address111", address);
 
-  const { data: loanBalanceData, error: loanBalanceError } = useBalance({
+  const {
+    data: loanBalanceData,
+    error: loanBalanceError,
+    refetch: refetchLoanBalance,
+  } = useBalance({
     address,
     token: loanTokenAddress,
     query: {
@@ -383,9 +387,10 @@ const Deposit = ({
         });
         // wait for supply tx to be mined before show success, otherwise the user may see the success message but the transaction is still pending, which can cause confusion
         await publicClient.waitForTransactionReceipt({ hash: depositHash });
+        // refetch loan balance to update UI after deposit, although we already know the new balance will be reduced by depositAmount, this can ensure the UI state is consistent with blockchain state
+        await refetchLoanBalance();
         setSubmitSuccess("Transaction confirmed.");
-        setSupplyAmount("");
-        setBorrowAmount("");
+        setDepositAmount("");
       }
     } catch (error) {
       console.error("lend submit failed", error);
@@ -393,64 +398,6 @@ const Deposit = ({
     } finally {
       setIsSubmitting(false);
     }
-
-    // try {
-    //   console.log("supplyValue123123", supplyValue);
-    //   // supply collateral if needed
-    //   if (supplyValue > 0) {
-    //     // check collateralTokenAddress
-    //     if (!collateralTokenAddress) {
-    //       throw new Error("Missing collateral token address.");
-    //     }
-    //     // parse amount to correct decimals 质押金额
-    //     const collateralAmount = parseUnits(supplyAmount, collateralDecimals);
-    //     // check allowance and approve if needed
-    //     const allowance = collateralAllowance ?? BigInt(0);
-    //     console.log("allowance222", allowance.toString());
-    //     console.log("collateralAmount222", collateralAmount.toString());
-    //     // if allowance not enough, approve max uint256 to avoid multiple approval in future
-    //     if (allowance < collateralAmount) {
-    //       const approveHash = await writeContractAsync({
-    //         abi: erc20Abi,
-    //         address: collateralTokenAddress,
-    //         functionName: "approve",
-    //         args: [marketAddress, collateralAmount],
-    //       });
-    //       // wait for approval tx to be mined before supply, otherwise the supply tx will fail
-    //       await publicClient.waitForTransactionReceipt({ hash: approveHash });
-    //       // refetch allowance to update UI, although we already know the new allowance will be max uint256, this can ensure the UI state is consistent with blockchain state
-    //       await refetchAllowance();
-    //     }
-    //     // then supply collateral to the market
-    //     const supplyHash = await writeContractAsync({
-    //       abi: marketAbi,
-    //       address: marketAddress,
-    //       functionName: "supplyCollateral",
-    //       args: [collateralAmount],
-    //     });
-    //     // wait for supply tx to be mined before show success, otherwise the user may see the success message but the transaction is still pending, which can cause confusion
-    //     await publicClient.waitForTransactionReceipt({ hash: supplyHash });
-    //   }
-    //   console.log("borrowValue", borrowValue);
-    //   if (borrowValue > 0) {
-    //     const borrowAmountParsed = parseUnits(borrowAmount, loanDecimals);
-    //     const borrowHash = await writeContractAsync({
-    //       abi: marketAbi,
-    //       address: marketAddress,
-    //       functionName: "borrow",
-    //       args: [borrowAmountParsed],
-    //     });
-    //     await publicClient.waitForTransactionReceipt({ hash: borrowHash });
-    //   }
-    //   setSubmitSuccess("Transaction confirmed.");
-    //   setSupplyAmount("");
-    //   setBorrowAmount("");
-    // } catch (error) {
-    //   console.error("lend submit failed", error);
-    //   setSubmitError(getErrorMessage(error));
-    // } finally {
-    //   setIsSubmitting(false);
-    // }
   };
 
   if (!market) {

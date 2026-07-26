@@ -118,6 +118,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid signature');
     }
 
+    // 使用签名的随机数标记为已使用
     authNonce.used = true;
     await this.authNonceRepo.save(authNonce);
 

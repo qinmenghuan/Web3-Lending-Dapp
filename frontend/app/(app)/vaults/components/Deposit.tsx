@@ -117,9 +117,10 @@ const Deposit = ({
 }) => {
   const [market, setMarket] = useState<MarketDetail | null>(null);
   // form state
-  // const [supplyAmount, setSupplyAmount] = useState("");
+  // 中文注释：supplyAmount用户输入的数字
+  const [supplyAmount, setSupplyAmount] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
-  // const [borrowAmount, setBorrowAmount] = useState("");
+  const [borrowAmount, setBorrowAmount] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -148,13 +149,13 @@ const Deposit = ({
     | undefined;
   const marketAddress = market?.marketAddress as `0x${string}` | undefined;
 
-  // const { data: collateralBalanceData } = useBalance({
-  //   address,
-  //   token: collateralTokenAddress,
-  //   query: {
-  //     enabled: Boolean(address && collateralTokenAddress),
-  //   },
-  // });
+  const { data: collateralBalanceData } = useBalance({
+    address,
+    token: collateralTokenAddress,
+    query: {
+      enabled: Boolean(address && collateralTokenAddress),
+    },
+  });
 
   console.log("loanTokenAddress222", loanTokenAddress);
   console.log("address111", address);
@@ -180,6 +181,7 @@ const Deposit = ({
   });
 
   // allowance for collateral token to check if approval is needed before supply
+  // 中文注释：collateralAllowance用户对市场合约的授权额度
   const { data: collateralAllowance, refetch: refetchAllowance } =
     useReadContract({
       abi: erc20Abi,
@@ -192,12 +194,26 @@ const Deposit = ({
       },
     });
 
-  // const supplyValue = Number(supplyAmount || "0");
+  // allowance for loan token to check if approval is needed before supply
+  // 中文注释：loanAllowance用户对市场合约的授权额度
+  const { data: loanAllowance, refetch: refetchLoanAllowance } =
+    useReadContract({
+      abi: erc20Abi,
+      address: loanTokenAddress,
+      functionName: "allowance",
+      args: address && marketAddress ? [address, marketAddress] : undefined,
+      query: {
+        // only fetch allowance when user connected and market & collateral token exist
+        enabled: Boolean(address && loanTokenAddress && marketAddress),
+      },
+    });
+
+  const supplyValue = Number(supplyAmount || "0");
   // depositValue is number type of the deposit input
   const depositValue = Number(depositAmount || "0");
-  // const borrowValue = Number(borrowAmount || "0");
-  // const collateralBalance = Number(collateralBalanceData?.formatted ?? "0");
-  // const collateralDecimals = collateralBalanceData?.decimals ?? 18;
+  const borrowValue = Number(borrowAmount || "0");
+  const collateralBalance = Number(collateralBalanceData?.formatted ?? "0");
+  const collateralDecimals = collateralBalanceData?.decimals ?? 18;
   console.log("loanBalanceData111", loanBalanceData);
   console.log("loanBalanceError111", {
     address,
@@ -242,11 +258,11 @@ const Deposit = ({
     return market.ltvBps / 10000;
   }, [market]);
 
-  // const addedBorrowCapacity = supplyValue * ltvRatio;
-  // const maxBorrowAmount = Math.max(
-  //   0,
-  //   Math.min(existingAvailableToBorrow + addedBorrowCapacity, marketLiquidity),
-  // );
+  const addedBorrowCapacity = supplyValue * ltvRatio;
+  const maxBorrowAmount = Math.max(
+    0,
+    Math.min(existingAvailableToBorrow + addedBorrowCapacity, marketLiquidity),
+  );
 
   // validate input values and return error messages for each field, this will be used to show error state in the UI and disable submit button if there are errors
   // will only recompute the memoized value when one of the deps has changed.
@@ -291,8 +307,8 @@ const Deposit = ({
         : isSubmitting
           ? "Submitting..."
           : depositValue > 0
-            ? `Deposit ${collateralLabel}`
-            : `Deposit ${collateralLabel}`;
+            ? `Deposit ${loanLabel}`
+            : `Deposit ${loanLabel}`;
 
   // handle input change and max click for both supply and borrow fields
   const handleAmountChange = (field: FieldName, value: string) => {
@@ -314,26 +330,84 @@ const Deposit = ({
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    // event.preventDefault();
-    // // check
-    // if (!canSubmit || !market || !address || !marketAddress || !publicClient) {
-    //   return;
-    // }
-    // // clear state data before submit
-    // setSubmitError("");
-    // setSubmitSuccess("");
-    // setIsSubmitting(true);
+    event.preventDefault();
+    // check
+    if (!canSubmit || !market || !address || !marketAddress || !publicClient) {
+      return;
+    }
+    // clear state data before submit
+    setSubmitError("");
+    setSubmitSuccess("");
+    setIsSubmitting(true);
+
+    console.log("depositAmount23234", depositAmount);
+
+    try {
+      if (depositValue > 0) {
+        // 校验借款地址
+        if (!loanTokenAddress) {
+          throw new Error("Invalid loan token address.");
+        }
+
+        // parse amount to correct decimals 质押金额
+        const loanAmount = parseUnits(depositAmount, loanDecimals);
+        // check allowance and approve if needed
+        const allowance = loanAllowance ?? BigInt(0);
+        console.log(
+          "allowance222",
+          allowance.toString(),
+          "loanAmount222",
+          loanAmount.toString(),
+        );
+        // 校验借款代币的授权金额
+        // if allowance not enough, approve max uint256 to avoid multiple approval in future
+        if (allowance < loanAmount) {
+          const approveHash = await writeContractAsync({
+            abi: erc20Abi,
+            address: loanTokenAddress,
+            functionName: "approve",
+            args: [marketAddress, loanAmount],
+          });
+          // wait for approval tx to be mined before supply, otherwise the supply tx will fail
+          await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          // refetch allowance to update UI, although we already know the new allowance will be max uint256, this can ensure the UI state is consistent with blockchain state
+          // 中文注释
+          await refetchAllowance();
+        }
+        console.log("marketAddress222", marketAddress);
+        const depositHash = await writeContractAsync({
+          abi: marketAbi,
+          address: marketAddress,
+          functionName: "deposit",
+          args: [loanAmount],
+        });
+        // wait for supply tx to be mined before show success, otherwise the user may see the success message but the transaction is still pending, which can cause confusion
+        await publicClient.waitForTransactionReceipt({ hash: depositHash });
+        setSubmitSuccess("Transaction confirmed.");
+        setSupplyAmount("");
+        setBorrowAmount("");
+      }
+    } catch (error) {
+      console.error("lend submit failed", error);
+      setSubmitError(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+
     // try {
+    //   console.log("supplyValue123123", supplyValue);
     //   // supply collateral if needed
     //   if (supplyValue > 0) {
     //     // check collateralTokenAddress
     //     if (!collateralTokenAddress) {
     //       throw new Error("Missing collateral token address.");
     //     }
-    //     // parse amount to correct decimals
+    //     // parse amount to correct decimals 质押金额
     //     const collateralAmount = parseUnits(supplyAmount, collateralDecimals);
     //     // check allowance and approve if needed
     //     const allowance = collateralAllowance ?? BigInt(0);
+    //     console.log("allowance222", allowance.toString());
+    //     console.log("collateralAmount222", collateralAmount.toString());
     //     // if allowance not enough, approve max uint256 to avoid multiple approval in future
     //     if (allowance < collateralAmount) {
     //       const approveHash = await writeContractAsync({
@@ -357,6 +431,7 @@ const Deposit = ({
     //     // wait for supply tx to be mined before show success, otherwise the user may see the success message but the transaction is still pending, which can cause confusion
     //     await publicClient.waitForTransactionReceipt({ hash: supplyHash });
     //   }
+    //   console.log("borrowValue", borrowValue);
     //   if (borrowValue > 0) {
     //     const borrowAmountParsed = parseUnits(borrowAmount, loanDecimals);
     //     const borrowHash = await writeContractAsync({
@@ -403,7 +478,6 @@ const Deposit = ({
       >
         Deposit
       </Button>
-
       <AmountPanel
         label="Deposit"
         tokenName={loanLabel}
@@ -416,7 +490,6 @@ const Deposit = ({
         onAmountChange={(value) => handleAmountChange("deposit", value)}
         onMaxClick={() => handleMaxClick("deposit")}
       />
-
       <div className="rounded-[28px] border border-border bg-card p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
         <div className="mb-5 flex items-center justify-between gap-4">
           <span className="text-sm text-muted-foreground">Network</span>
@@ -453,7 +526,6 @@ const Deposit = ({
           <SummaryRow label="Projected yearly earnings" value="--" />
         </div>
       </div>
-
       {submitError ? (
         <p className="text-sm text-red-500">{submitError}</p>
       ) : null}

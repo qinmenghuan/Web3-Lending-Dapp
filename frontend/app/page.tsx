@@ -12,7 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 
-import MarketingNav from "@/app/components/MarketingNav";
+import MarketingNav from "@/components/layout/MarketingNav";
 import { Button } from "@/components/ui/button";
 
 const protocolHighlights = [

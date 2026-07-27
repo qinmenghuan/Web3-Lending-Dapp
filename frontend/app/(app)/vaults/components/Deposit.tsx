@@ -48,21 +48,21 @@ const INPUT_DECIMALS: Record<FieldName, number> = {
   deposit: 8,
 };
 
-const lendingMarketAbi = [
-  {
-    type: "function",
-    name: "getUserPosition",
-    stateMutability: "view",
-    inputs: [{ name: "user", type: "address" }],
-    outputs: [
-      { name: "depositAmount", type: "uint256" },
-      { name: "collateralAmount", type: "uint256" },
-      { name: "debtAmount", type: "uint256" },
-      { name: "maxBorrowAmount", type: "uint256" },
-      { name: "availableToBorrow", type: "uint256" },
-    ],
-  },
-] as const;
+// const lendingMarketAbi = [
+//   {
+//     type: "function",
+//     name: "getUserPosition",
+//     stateMutability: "view",
+//     inputs: [{ name: "user", type: "address" }],
+//     outputs: [
+//       { name: "depositAmount", type: "uint256" },
+//       { name: "collateralAmount", type: "uint256" },
+//       { name: "debtAmount", type: "uint256" },
+//       { name: "maxBorrowAmount", type: "uint256" },
+//       { name: "availableToBorrow", type: "uint256" },
+//     ],
+//   },
+// ] as const;
 
 // format amount with suffixes and handle edge cases like non-finite numbers, negative values, and very small or large numbers, to ensure the displayed amounts are user-friendly and consistent.
 const formatAmount = (value: number, maximumFractionDigits = 4) => {
@@ -117,10 +117,7 @@ const Deposit = ({
 }) => {
   const [market, setMarket] = useState<MarketDetail | null>(null);
   // form state
-  // 中文注释：supplyAmount用户输入的数字
-  const [supplyAmount, setSupplyAmount] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
-  const [borrowAmount, setBorrowAmount] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -175,7 +172,8 @@ const Deposit = ({
 
   // fetch user's current position in the market, including their existing collateral, debt, and available borrow amount,
   const { data: userPosition } = useReadContract({
-    abi: lendingMarketAbi,
+    abi: marketAbi,
+    // abi: lendingMarketAbi,
     address: marketAddress,
     functionName: "getUserPosition",
     args: [address ?? ZERO_ADDRESS],
@@ -183,20 +181,6 @@ const Deposit = ({
       enabled: Boolean(address && marketAddress),
     },
   });
-
-  // allowance for collateral token to check if approval is needed before supply
-  // 中文注释：collateralAllowance用户对市场合约的授权额度
-  const { data: collateralAllowance, refetch: refetchAllowance } =
-    useReadContract({
-      abi: erc20Abi,
-      address: collateralTokenAddress,
-      functionName: "allowance",
-      args: address && marketAddress ? [address, marketAddress] : undefined,
-      query: {
-        // only fetch allowance when user connected and market & collateral token exist
-        enabled: Boolean(address && collateralTokenAddress && marketAddress),
-      },
-    });
 
   // allowance for loan token to check if approval is needed before supply
   // 中文注释：loanAllowance用户对市场合约的授权额度
@@ -212,28 +196,14 @@ const Deposit = ({
       },
     });
 
-  const supplyValue = Number(supplyAmount || "0");
+  // const supplyValue = Number(supplyAmount || "0");
   // depositValue is number type of the deposit input
   const depositValue = Number(depositAmount || "0");
-  const borrowValue = Number(borrowAmount || "0");
-  const collateralBalance = Number(collateralBalanceData?.formatted ?? "0");
-  const collateralDecimals = collateralBalanceData?.decimals ?? 18;
-  console.log("loanBalanceData111", loanBalanceData);
-  console.log("loanBalanceError111", {
-    address,
-    loanTokenAddress,
-    error: loanBalanceError,
-    message: loanBalanceError?.message,
-    cause: loanBalanceError?.cause,
-  });
   const loanDecimals = loanBalanceData?.decimals ?? 18;
   const loanBalance = Number(loanBalanceData?.formatted ?? "0");
 
   const existingCollateral = toDisplayAmount(userPosition?.[1] ?? BigInt(0));
   const existingDebt = toDisplayAmount(userPosition?.[2] ?? BigInt(0));
-  const existingAvailableToBorrow = toDisplayAmount(
-    userPosition?.[4] ?? BigInt(0),
-  );
 
   // calculate market liquidity based on total loan and total debt
   const marketLiquidity = useMemo(() => {
@@ -261,12 +231,6 @@ const Deposit = ({
 
     return market.ltvBps / 10000;
   }, [market]);
-
-  const addedBorrowCapacity = supplyValue * ltvRatio;
-  const maxBorrowAmount = Math.max(
-    0,
-    Math.min(existingAvailableToBorrow + addedBorrowCapacity, marketLiquidity),
-  );
 
   // validate input values and return error messages for each field, this will be used to show error state in the UI and disable submit button if there are errors
   // will only recompute the memoized value when one of the deps has changed.
@@ -376,7 +340,7 @@ const Deposit = ({
           await publicClient.waitForTransactionReceipt({ hash: approveHash });
           // refetch allowance to update UI, although we already know the new allowance will be max uint256, this can ensure the UI state is consistent with blockchain state
           // 中文注释
-          await refetchAllowance();
+          await refetchLoanAllowance();
         }
         console.log("marketAddress222", marketAddress);
         const depositHash = await writeContractAsync({

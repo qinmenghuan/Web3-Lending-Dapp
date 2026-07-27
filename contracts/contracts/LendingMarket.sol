@@ -66,13 +66,14 @@ contract LendingMarket {
     // 贷款人存款
     function deposit(uint256 amount) external nonReentrant {
         require(amount > 0, "deposit should more than 0");
+
+        deposits[msg.sender] += amount;
+        stats.totalDeposits += amount;
+
         require(
             IERC20(loanToken).transferFrom(msg.sender, address(this), amount),
             "transferFrom failure"
         );
-
-        deposits[msg.sender] += amount;
-        stats.totalDeposits += amount;
 
         emit Deposited(msg.sender, amount);
     }

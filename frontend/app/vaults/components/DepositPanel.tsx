@@ -18,80 +18,20 @@ import { toBigInt, getTokenBadge } from "@/utils/amount";
 import { getErrorMessage } from "@/utils/errors";
 import { cn } from "@/utils/styles";
 import { erc20Abi, marketAbi } from "@/web3/abis";
+import { ZERO_ADDRESS } from "@/lib/constants";
+import { MarketDetail, FieldName } from "@/types";
+import {
+  formatAmount,
+  toDisplayAmount,
+  toInputValue,
+  normalizeAmountInput,
+} from "@/utils/amount";
 
-interface MarketDetail {
-  id: number;
-  marketAddress: string | null;
-  network: string;
-  collateralTokenAddress: string;
-  collateralTokenName: string;
-  loanTokenAddress: string;
-  loanTokenName: string;
-  totalCollateralAmount: string;
-  totalLoanAmount: string;
-  totalLoanAmountDesc: string;
-  totalDebtAmount: string;
-  ltvBps: number;
-  lltvDesc: string;
-  txHash: string;
-  timestamp: number;
-  totalLiquidityDesc?: string;
-  utilizationDesc?: string;
-}
-
-// unify supply and deposit to reuse the same input component and logic, since for user it's the same action just different label
-type FieldName = "supply" | "borrow" | "deposit";
-
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 // define different input decimals for supply and borrow fields
 const INPUT_DECIMALS: Record<FieldName, number> = {
   supply: 8,
   borrow: 6,
   deposit: 8,
-};
-
-// format amount with suffixes and handle edge cases like non-finite numbers, negative values, and very small or large numbers, to ensure the displayed amounts are user-friendly and consistent.
-const formatAmount = (value: number, maximumFractionDigits = 4) => {
-  if (!Number.isFinite(value)) {
-    return "0.00";
-  }
-
-  return value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits,
-  });
-};
-
-const toDisplayAmount = (value: bigint, decimals = 18) => {
-  return Number(formatUnits(value, decimals));
-};
-
-const toInputValue = (value: number, decimals: number) => {
-  if (!Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
-  return value.toFixed(decimals).replace(/\.?0+$/, "");
-};
-
-// 格式化用户输入，限制为数字和小数点，并且根据不同的字段限制小数位数，同时去除前导零，确保输入合法且符合预期格式
-const normalizeAmountInput = (value: string, decimals: number) => {
-  const sanitized = value.replace(/[^\d.]/g, "");
-
-  if (!sanitized) {
-    return "";
-  }
-
-  const [integerPart, ...decimalParts] = sanitized.split(".");
-  const normalizedInteger = integerPart.replace(/^0+(?=\d)/, "") || "0";
-
-  if (decimalParts.length === 0) {
-    return sanitized.endsWith(".")
-      ? `${normalizedInteger}.`
-      : normalizedInteger;
-  }
-
-  return `${normalizedInteger}.${decimalParts.join("").slice(0, decimals)}`;
 };
 
 const Deposit = ({
@@ -139,9 +79,6 @@ const Deposit = ({
       enabled: Boolean(address && collateralTokenAddress),
     },
   });
-
-  console.log("loanTokenAddress222", loanTokenAddress);
-  console.log("address111", address);
 
   const {
     data: loanBalanceData,
@@ -210,14 +147,6 @@ const Deposit = ({
     );
   }, [market]);
 
-  const ltvRatio = useMemo(() => {
-    if (!market) {
-      return 0;
-    }
-
-    return market.ltvBps / 10000;
-  }, [market]);
-
   // validate input values and return error messages for each field, this will be used to show error state in the UI and disable submit button if there are errors
   // will only recompute the memoized value when one of the deps has changed.
   const errors = useMemo(() => {
@@ -249,7 +178,6 @@ const Deposit = ({
   const projectedLtv =
     projectedCollateral > 0 ? (projectedDebt / projectedCollateral) * 100 : 0;
 
-  const collateralLabel = market?.collateralTokenName ?? "Collateral";
   const loanLabel = market?.loanTokenName ?? "Loan";
 
   const actionLabel = !isConnected

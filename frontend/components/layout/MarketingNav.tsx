@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { ArrowUpRight, BookOpen, Coins, Database, Landmark, Shield } from "lucide-react";
+import {
+  ArrowUpRight,
+  BookOpen,
+  Coins,
+  Database,
+  Landmark,
+  Shield,
+} from "lucide-react";
 
 import WalletActions from "@/components/layout/WalletActions";
 import { Button } from "@/components/ui/button";
@@ -15,25 +22,28 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { cn } from "@/lib/utils/styles";
+import { cn } from "@/utils/styles";
 
 const productItems = [
   {
     href: "/vaults",
     title: "Vaults",
-    description: "Curated yield routes with a clean entry point for passive capital.",
+    description:
+      "Curated yield routes with a clean entry point for passive capital.",
     icon: Coins,
   },
   {
     href: "/markets",
     title: "Markets",
-    description: "Browse isolated lending markets and inspect the live credit surface.",
+    description:
+      "Browse isolated lending markets and inspect the live credit surface.",
     icon: Database,
   },
   {
     href: "/deposit",
     title: "Deposit",
-    description: "Move directly into wallet-connected supply flows from the homepage.",
+    description:
+      "Move directly into wallet-connected supply flows from the homepage.",
     icon: Landmark,
   },
 ];
@@ -42,17 +52,20 @@ const solutionItems = [
   {
     href: "/vaults",
     title: "Earn Products",
-    description: "Translate protocol access into a simple product-led investing flow.",
+    description:
+      "Translate protocol access into a simple product-led investing flow.",
   },
   {
     href: "/markets",
     title: "Credit Markets",
-    description: "Expose collateral and lending primitives in isolated market routes.",
+    description:
+      "Expose collateral and lending primitives in isolated market routes.",
   },
   {
     href: "/deposit",
     title: "Wallet Onboarding",
-    description: "Keep connection and signature-based auth visible from the first screen.",
+    description:
+      "Keep connection and signature-based auth visible from the first screen.",
   },
 ];
 
@@ -60,17 +73,20 @@ const resourceItems = [
   {
     href: "https://morpho.org/",
     title: "Morpho Website",
-    description: "The live homepage used as the reference for section hierarchy and CTA density.",
+    description:
+      "The live homepage used as the reference for section hierarchy and CTA density.",
   },
   {
     href: "https://docs.morpho.org/",
     title: "Morpho Docs",
-    description: "Protocol and developer documentation for deeper implementation follow-up.",
+    description:
+      "Protocol and developer documentation for deeper implementation follow-up.",
   },
   {
     href: "https://github.com/morpho-org",
     title: "Morpho GitHub",
-    description: "Reference repos, contracts, and integration patterns from the source.",
+    description:
+      "Reference repos, contracts, and integration patterns from the source.",
   },
 ];
 
@@ -153,8 +169,9 @@ export default function MarketingNav() {
                       Morpho-style hierarchy, wired into your existing routes.
                     </h3>
                     <p className="mt-3 text-sm leading-6 text-[#bdbdb5]">
-                      The landing page keeps the root experience distinct from the app while
-                      routing directly into vaults, markets, and deposit.
+                      The landing page keeps the root experience distinct from
+                      the app while routing directly into vaults, markets, and
+                      deposit.
                     </p>
                   </div>
                   <div className="grid gap-3">
@@ -246,7 +263,10 @@ export default function MarketingNav() {
               <BookOpen className="size-4 text-[#d8ff72]" />
               Morpho-inspired landing, app-native routes.
             </div>
-            <Button asChild className="rounded-full bg-[#d8ff72] px-4 text-black hover:bg-[#c6ef59]">
+            <Button
+              asChild
+              className="rounded-full bg-[#d8ff72] px-4 text-black hover:bg-[#c6ef59]"
+            >
               <Link href="/markets">Launch</Link>
             </Button>
           </div>

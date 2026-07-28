@@ -2,8 +2,8 @@
 
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { getMarketById } from "@/lib/api/markets";
-import { formatAddress } from "@/lib/utils/address";
+import { getMarketById } from "@/api/markets";
+import { formatAddress } from "@/utils/address";
 
 interface MarketDetail {
   collateralTokenName: string;
@@ -13,7 +13,13 @@ interface MarketDetail {
   network: string;
 }
 
-const DetailBaseInfo = ({ marketId, className }: { marketId: string; className?: string }) => {
+const DetailBaseInfo = ({
+  marketId,
+  className,
+}: {
+  marketId: string;
+  className?: string;
+}) => {
   const [market, setMarket] = React.useState<MarketDetail | null>(null);
 
   useEffect(() => {

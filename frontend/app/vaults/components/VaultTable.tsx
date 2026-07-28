@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getMarkets } from "@/lib/api/markets";
+import { getMarkets } from "@/api/markets";
 
 interface MarketRow {
   id: number;

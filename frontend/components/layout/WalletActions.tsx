@@ -5,7 +5,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useSignMessage } from "wagmi";
 
 import { Button } from "@/components/ui/button";
-import { requestWalletLogin, verifyWalletLogin } from "@/lib/api/auth";
+import { requestWalletLogin, verifyWalletLogin } from "@/api/auth";
 
 type WalletActionsProps = {
   className?: string;

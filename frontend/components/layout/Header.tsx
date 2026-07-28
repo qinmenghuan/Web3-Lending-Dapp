@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useSignMessage } from "wagmi";
-import { requestWalletLogin, verifyWalletLogin } from "@/lib/api/auth";
+import { requestWalletLogin, verifyWalletLogin } from "@/api/auth";
 import styles from "./Home.module.css";
 import { Button } from "@/components/ui/button";
 

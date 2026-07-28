@@ -11,9 +11,9 @@ import {
 } from "wagmi";
 
 import { Button } from "@/components/ui/button";
-import { getMarketById } from "@/lib/api/markets";
-import { cn } from "@/lib/utils/styles";
-import { erc20Abi, marketAbi } from "@/lib/web3/abis";
+import { getMarketById } from "@/api/markets";
+import { cn } from "@/utils/styles";
+import { erc20Abi, marketAbi } from "@/web3/abis";
 
 interface MarketDetail {
   id: number;

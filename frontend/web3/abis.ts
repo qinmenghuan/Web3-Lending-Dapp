@@ -223,7 +223,7 @@ export const marketAbi = [
     stateMutability: "nonpayable",
     type: "function",
   },
-];
+] as const;
 
 export const erc20Abi = [
   {

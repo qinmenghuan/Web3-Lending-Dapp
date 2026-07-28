@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils/styles";
+import { cn } from "@/utils/styles";
 
 const AmountPanel = ({
   label,

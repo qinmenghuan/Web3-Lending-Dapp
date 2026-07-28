@@ -13,11 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import AmountPanel from "@/components/common/AmountPanel";
 import SummaryRow from "@/components/common/SummaryRow";
-import { getMarketById } from "@/lib/api/markets";
-import { toBigInt, getTokenBadge } from "@/lib/utils/amount";
-import { getErrorMessage } from "@/lib/utils/errors";
-import { cn } from "@/lib/utils/styles";
-import { erc20Abi, marketAbi } from "@/lib/web3/abis";
+import { getMarketById } from "@/api/markets";
+import { toBigInt, getTokenBadge } from "@/utils/amount";
+import { getErrorMessage } from "@/utils/errors";
+import { cn } from "@/utils/styles";
+import { erc20Abi, marketAbi } from "@/web3/abis";
 
 interface MarketDetail {
   id: number;
@@ -49,22 +49,6 @@ const INPUT_DECIMALS: Record<FieldName, number> = {
   borrow: 6,
   deposit: 8,
 };
-
-// const lendingMarketAbi = [
-//   {
-//     type: "function",
-//     name: "getUserPosition",
-//     stateMutability: "view",
-//     inputs: [{ name: "user", type: "address" }],
-//     outputs: [
-//       { name: "depositAmount", type: "uint256" },
-//       { name: "collateralAmount", type: "uint256" },
-//       { name: "debtAmount", type: "uint256" },
-//       { name: "maxBorrowAmount", type: "uint256" },
-//       { name: "availableToBorrow", type: "uint256" },
-//     ],
-//   },
-// ] as const;
 
 // format amount with suffixes and handle edge cases like non-finite numbers, negative values, and very small or large numbers, to ensure the displayed amounts are user-friendly and consistent.
 const formatAmount = (value: number, maximumFractionDigits = 4) => {

@@ -49,7 +49,8 @@ const Deposit = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // address and isConnected state from wagmi
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
+  // 中文注释 ：supplyAmount用户输入的数字
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
 
@@ -71,14 +72,6 @@ const Deposit = ({
     | `0x${string}`
     | undefined;
   const marketAddress = market?.marketAddress as `0x${string}` | undefined;
-
-  const { data: collateralBalanceData } = useBalance({
-    address,
-    token: collateralTokenAddress,
-    query: {
-      enabled: Boolean(address && collateralTokenAddress),
-    },
-  });
 
   const {
     data: loanBalanceData,
@@ -230,20 +223,52 @@ const Deposit = ({
         if (!loanTokenAddress) {
           throw new Error("Invalid loan token address.");
         }
+        if (!chainId) {
+          throw new Error("Wallet chain is unavailable.");
+        }
+        if (publicClient.chain.id !== chainId) {
+          throw new Error("Wallet chain does not match the network.");
+        }
+
+        // read the balance and allowance of the loan token for the user, to check if they have enough balance and if they need to approve the market contract to spend their tokens
+        refetchLoanBalance();
+        refetchLoanAllowance();
 
         // parse amount to correct decimals 质押金额
         const loanAmount = parseUnits(depositAmount, loanDecimals);
+
+        // 再次实时校验余额和授权
+        const [balanceResult, allowanceResult] = await Promise.all([
+          refetchLoanBalance(),
+          refetchLoanAllowance(),
+        ]);
+        // 校验返回结果
+        if (balanceResult.error) {
+          throw balanceResult.error;
+        }
+
+        if (allowanceResult.error) {
+          throw allowanceResult.error;
+        }
+        // 检查返回的数据
+        const freshBalanceData = balanceResult.data;
+        const freshAllowance = allowanceResult.data;
+        let latestAllowance = freshAllowance;
+        if (!freshBalanceData) {
+          throw new Error("Unable to read latest token balance.");
+        }
+
+        if (freshAllowance === undefined) {
+          throw new Error("Unable to read latest token allowance.");
+        }
+        // 校验存款额小于余额
+        const freshBalance = freshBalanceData.value;
+
         // check allowance and approve if needed
-        const allowance = loanAllowance ?? BigInt(0);
-        console.log(
-          "allowance222",
-          allowance.toString(),
-          "loanAmount222",
-          loanAmount.toString(),
-        );
+        // const allowance = loanAllowance ?? BigInt(0);
         // 校验借款代币的授权金额
         // if allowance not enough, approve max uint256 to avoid multiple approval in future
-        if (allowance < loanAmount) {
+        if (freshAllowance < loanAmount) {
           const approveHash = await writeContractAsync({
             abi: erc20Abi,
             address: loanTokenAddress,
@@ -254,17 +279,56 @@ const Deposit = ({
           await publicClient.waitForTransactionReceipt({ hash: approveHash });
           // refetch allowance to update UI, although we already know the new allowance will be max uint256, this can ensure the UI state is consistent with blockchain state
           // 中文注释
-          await refetchLoanAllowance();
+          const allowanceAfterApprovalResult = await refetchLoanAllowance();
+          if (allowanceAfterApprovalResult.error) {
+            throw allowanceAfterApprovalResult.error;
+          }
+          const allowanceAfterApproval = allowanceAfterApprovalResult.data;
+          latestAllowance = allowanceAfterApproval;
+
+          if (allowanceAfterApproval === undefined) {
+            throw new Error("Unable to read allowance after approval.");
+          }
+          // 再次校验
+          if (allowanceAfterApproval < loanAmount) {
+            throw new Error("Allowance is still insufficient after approval.");
+          }
         }
-        console.log("marketAddress222", marketAddress);
-        const depositHash = await writeContractAsync({
-          abi: marketAbi,
+        // 校验余额和授权
+        if (freshBalance < loanAmount) {
+          throw new Error("Insufficient token balance.");
+        }
+
+        if ((latestAllowance as bigint) < loanAmount) {
+          throw new Error("Insufficient token allowance.");
+        }
+        // 模拟发送存款交易，确保交易不会失败
+        const depositSimulation = await publicClient.simulateContract({
           address: marketAddress,
+          abi: marketAbi,
           functionName: "deposit",
           args: [loanAmount],
+          account: address,
+          chain: publicClient.chain,
         });
+        console.log("marketAddress222", marketAddress);
+        const depositHash = await writeContractAsync({
+          ...depositSimulation.request,
+          chainId,
+        });
+        // const depositHash = await writeContractAsync({
+        //   abi: marketAbi,
+        //   address: marketAddress,
+        //   functionName: "deposit",
+        //   args: [loanAmount],
+        // });
         // wait for supply tx to be mined before show success, otherwise the user may see the success message but the transaction is still pending, which can cause confusion
-        await publicClient.waitForTransactionReceipt({ hash: depositHash });
+        const depositReceipt = await publicClient.waitForTransactionReceipt({
+          hash: depositHash,
+        });
+        if (depositReceipt.status !== "success") {
+          throw new Error("Deposit transaction reverted.");
+        }
         // refetch loan balance to update UI after deposit, although we already know the new balance will be reduced by depositAmount, this can ensure the UI state is consistent with blockchain state
         await refetchLoanBalance();
         setSubmitSuccess("Transaction confirmed.");
